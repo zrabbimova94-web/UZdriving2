@@ -26,12 +26,13 @@ h1{margin:0;font-size:clamp(34px,9vw,64px);letter-spacing:2px;text-shadow:0 4px 
 #rd{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#0b6b3a;border:2px solid #fff;border-radius:8px;padding:4px 12px;font-weight:700;font-size:14px;white-space:nowrap}
 .m small{color:#ccc}
 #ts{position:fixed;left:50%;top:14%;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:12px;display:none;z-index:9}
+.gr{margin:4px 0;font-size:13px}.sw{display:inline-block;width:26px;height:26px;border-radius:50%;margin:2px;border:3px solid #fff3;cursor:pointer;vertical-align:middle}.sw.on{border-color:#ffd23f}.tb{background:#223;color:#fff;border:2px solid #fff3;border-radius:8px;padding:5px 8px;margin:2px;font-size:12px;cursor:pointer}.tb.on{border-color:#ffd23f}
 </style></head><body>
 <div class="ov on" id="menu"><div class="coin">🪙 <span class="cn"></span></div>
 <div class="ctr"><h1>UZ DRIVING</h1><div style="margin-top:6px;font-weight:700;opacity:.85">📍 Toshkent, O'zbekiston</div><div class="mp" id="mp"></div><button class="btn" onclick="go()">O'YNASH</button></div>
 <button class="bl" onclick="gOpen()">🚗 Garaj</button><div style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:11px;opacity:.6;pointer-events:none">Modellar (Sketchfab): Daewoo Matiz – nyranarod, Chevrolet Spark, Nexia 2, Cobalt LTZ – Q.SARDOR, Gentra – uzb_rx7, Tracker – Doniyor 3D (CC-BY), BYD Chazor – Ddiaz Design (CC-BY-NC-SA, tijorat uchun emas)</div></div>
 <div class="ov" id="garage"><div class="coin">🪙 <span class="cn"></span></div>
-<div class="sheet"><div id="gl"></div><button class="btn" id="ga" onclick="act()" style="margin-top:8px"></button> <button class="btn" style="background:#fff;margin-left:8px" onclick="gClose()">Orqaga</button></div></div>
+<div class="sheet" style="max-height:62vh;overflow-y:auto"><div id="gl"></div><div id="gt"></div><button class="btn" id="ga" onclick="act()" style="margin-top:8px"></button> <button class="btn" style="background:#fff;margin-left:8px" onclick="gClose()">Orqaga</button></div></div>
 <div class="ov" id="hud"><div class="spd"><span id="sp">0</span> km/h<br><small id="di" style="font-size:16px"></small><br><small id="mx" style="font-size:16px"></small></div><div id="rd"></div><div class="coin">🪙 <span id="ec">0</span></div><div id="bn"></div><div class="sg" id="sgL" style="left:calc(50% - 56px)" onclick="sigT(-1)">◀</div><div class="sg" id="sgR" style="left:calc(50% + 10px)" onclick="sigT(1)">▶</div><button class="x" onclick="endRun(0,1)">Chiqish</button>
 <div class="wh" id="wh"><div id="lg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none"></div></div><div class="pd" id="br" style="right:114px;background:#a33">TORMOZ</div><div class="pd" id="gs" style="right:18px;background:#2a7">GAZ</div></div>
 <div class="ov" id="res"><div id="sc" style="position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center"></div><div class="pn" style="top:5%"><h2 id="rt" style="margin:0 0 8px"></h2><div id="rx"></div><button class="btn" onclick="go()">Qayta</button> <button class="btn" style="background:#fff" onclick="toMenu()">Menyu</button></div></div>
@@ -49,6 +50,7 @@ const T={h:{l:3.6,w:1.65,b:.95,r:1.5,a:[.8,.25,-1.2,-1.7]},s:{l:4.6,w:1.8,b:.95,
 let S={coins:0,own:[0],sel:0};
 try{const s=JSON.parse(localStorage.getItem('uzd')||'null');if(s)S=s}catch(e){}
 if(!S.v){const had=S.own.includes(3);S.own=S.own.filter(i=>i!=3).map(i=>i==4?3:i==5?4:i);if(had)S.coins+=2500;S.sel=S.sel==3?0:S.sel==4?3:S.sel==5?4:S.sel;S.v=2;if(!S.own.includes(S.sel))S.sel=0;try{localStorage.setItem('uzd',JSON.stringify(S))}catch(e){}}
+S.col=S.col||{};S.rim=S.rim||{};S.tune=S.tune||{};
 const save=()=>{try{localStorage.setItem('uzd',JSON.stringify(S))}catch(e){}};
 const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));document.body.prepend(R.domElement);
 const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(60,1,.1,400);
@@ -62,6 +64,8 @@ return GC[k]={b:geo(shp([[-h,.3],[h,.3],[h,.62],[h-.12,b-.1],[wf,b],[rf,r],[rr,r
 let MZ={};
 function cloneMZ(src,col){const m=src.clone(true),sg={L:[],R:[]};m.traverse(o=>{if(o.isMesh){o.material=o.material.clone();if(o.material.name=='Car_Paint'){o.material.color.set(col);o.material.metalness=.1;o.material.roughness=.5;if(src.userData.lift&&o.material.emissive)o.material.emissive.copy(o.material.color).multiplyScalar(.35)}}});
 for(const k of['L','R']){const o=m.getObjectByName('sig'+k);if(o)o.traverse(q=>{if(q.isMesh)sg[k].push(q)})}
+{const bb=new THREE.Box3().setFromObject(m),w=bb.max.x-bb.min.x,lp=(x,y,z)=>{const q=new THREE.Mesh(new THREE.BoxGeometry(.36,.15,.12),new THREE.MeshBasicMaterial({color:0x553300}));q.position.set(x,y,z);m.add(q);return q};
+sg.L.push(lp(w*.38,.64,bb.max.z+.03),lp(w*.38,.82,bb.min.z-.03));sg.R.push(lp(-w*.38,.64,bb.max.z+.03),lp(-w*.38,.82,bb.min.z-.03))}
 m.userData.sg=sg;m.userData.wh=['wLF','wLB','wRF','wRB'].map(n=>m.getObjectByName(n));return m}
 const MODELS={'Matiz':'matiz','Chevrolet Spark':'spark','Nexia 2':'nexia2','Cobalt':'cobalt','Gentra':'gentra','Chevrolet Tracker':'tracker','BYD Chazor':'chazor'};
 function ms(t,bad){let d=$('ms');if(!d){d=document.createElement('div');d.id='ms';d.style.cssText='position:fixed;left:8px;top:calc(8px + env(safe-area-inset-top,0px));font:12px monospace;background:#000a;padding:4px 8px;border-radius:8px;z-index:50;max-width:70%';document.body.appendChild(d)}d.style.color=bad?'#f88':'#9f9';d.textContent=t}
@@ -110,7 +114,7 @@ mkPath();[[0,26,0x333338,.02],[-12.7,.25,0xffffff,.04],[12.7,.25,0xffffff,.04],[
 ground=new THREE.Mesh(new THREE.PlaneGeometry(900,900),new THREE.MeshLambertMaterial({color:Mp.gr}));ground.rotation.x=-Math.PI/2;world.add(ground);
 RO=[];{const bg=new THREE.BoxGeometry(1,1,1),rg=new THREE.ConeGeometry(.75,.6,4),WM=[0xe8dcc0,0xd9b99b,0xcfd8dc,0xf0e0a0,0xb8c4a8].map(c=>new THREE.MeshLambertMaterial({color:c})),rm=new THREE.MeshLambertMaterial({color:0x8a3b2e});
 for(let i=8;i<PX.length;i+=5)for(const sd of[-1,1]){if(Math.random()<.12)continue;const w=Mp.b?9+Math.random()*5:6+Math.random()*2,d=Mp.b?8+Math.random()*2:7+Math.random()*2,h=Mp.b?10+Math.random()*30:4+Math.random()*2,o=sd*(14.5+w/2+Math.random()*4),x=PX[i]+Math.cos(PH[i])*o,z=PZ[i]-Math.sin(PH[i])*o;
-const m=new THREE.Mesh(bg,WM[Math.random()*5|0]);m.scale.set(w,h,d);m.position.set(x,h/2,z);m.rotation.y=PH[i];world.add(m);
+const m=new THREE.Mesh(bg,facade(w,h,d,WM[Math.random()*5|0].color));m.scale.set(w,h,d);m.position.set(x,h/2,z);m.rotation.y=PH[i];world.add(m);
 if(!Mp.b){const r=new THREE.Mesh(rg,rm);r.scale.set(w*1.05,3,d*1.05);r.position.set(x,h+.9,z);r.rotation.y=PH[i]+Math.PI/4;world.add(r)}
 RO.push({x,z,h:PH[i],hw:w/2,hl:d/2})}}
 marks();sc.add(world)}
@@ -124,9 +128,9 @@ const hk=new THREE.Group(),pd=new THREE.Mesh(new THREE.BoxGeometry(4,5,4),L(0x8d
 // Hazrati Imom minoralari
 for(const dx of[-12,12]){const mn=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.8,40,12),L(0xe3c9a0));mn.position.y=20;const g=new THREE.Group();g.add(mn);at(2050+dx,50,g)}
 const dm2=new THREE.Mesh(new THREE.SphereGeometry(8,20,10,0,Math.PI*2,0,Math.PI/2),L(0x2a9d8f));dm2.position.y=10;const bb=new THREE.Mesh(new THREE.BoxGeometry(16,10,16),L(0xe3c9a0));bb.position.y=5;const hz=new THREE.Group();hz.add(bb,dm2);at(2050,58,hz)}
-function setCar(i){if(P.m)sc.remove(P.m);P.m=mkCar(CARS[i][3],CARS[i][2],CARS[i][0],1);needHQ(CARS[i][0]);sc.add(P.m);$('lg').innerHTML=logo(CARS[i][0])}
+function setCar(i){if(P.m)sc.remove(P.m);P.m=mkCar(S.col[i]||CARS[i][3],CARS[i][2],CARS[i][0],1);applyTune(P.m,i);needHQ(CARS[i][0]);sc.add(P.m);$('lg').innerHTML=logo(CARS[i][0])}
 const PAL=['#eee','#222','#888','#a22','#235','#ddd','#c93'];
-function resp(t,z){t.dir=Math.random()<.5?1:-1;t.lane=t.dir>0?[-3.25,-9.75][Math.random()*2|0]:[3.25,9.75][Math.random()*2|0];t.v=t.dir>0?10+Math.random()*8:14+Math.random()*8;for(let k=0;k<8&&tr.some(u=>u!==t&&u.lane==t.lane&&Math.abs(u.s-z)<18);k++)z+=20;t.s=z;t.pd=1;t.sv=0}
+function resp(t,z){t.dir=Math.random()<.5?1:-1;t.lane=t.dir>0?[-3.25,-9.75][Math.random()*2|0]:[3.25,9.75][Math.random()*2|0];t.v=t.dir>0?10+Math.random()*8:14+Math.random()*8;for(let k=0;k<8&&tr.some(u=>u!==t&&u.lane==t.lane&&Math.abs(u.s-z)<18);k++)z+=20;t.s=z;t.pd=1;t.sv=0;t.cs=undefined}
 function mkTraffic(){tr.forEach(t=>sc.remove(t.m));tr=[];for(let i=0;i<12;i++){const c=CARS[Math.random()*NC|0],m=mkCar(PAL[Math.random()*PAL.length|0],c[2],c[0]);sc.add(m);const t={m};resp(t,60+i*40+Math.random()*30);tr.push(t)}}
 function place(){P.v=0;{const p=pathAt(0);P.s=0;P.h=p.h;P.x=p.x-Math.cos(p.h)*3.25;P.z=p.z+Math.sin(p.h)*3.25}P.vh=P.h;P.m.position.set(P.x,0,P.z);P.m.rotation.y=P.h}
 function reset(){place()}
@@ -145,7 +149,23 @@ let pv=0;
 function gOpen(){st='garage';pv=S.sel;show('garage');coins();gar()}
 function gClose(){setCar(S.sel);reset();st='menu';show('menu')}
 function pick(i){pv=i;setCar(i);reset();gar()}
-function gar(){$('gl').innerHTML=CARS.map((c,i)=>`<div class="cd ${i==pv?'on':''}" onclick="pick(${i})"><b>${c[0]}</b><small>${i>=NC?'$'+c[1]:c[1]?c[1]+' coin':'Bepul'}</small><em>${S.sel==i?'✔ Tanlangan':S.own.includes(i)?'Sizniki':''}</em></div>`).join('');
+const COLS=['#f2f2f2','#111111','#c0392b','#1e5bd8','#27ae60','#f1c40f','#e67e22','#7d3c98','#7f8c8d','#16a085','#ff69b4','#8b4513'];
+const RIMS=[['Standart',null,0],['Qora','#151515',350],['Oltin','#d4af37',920],['Qizil','#c0141c',480],["Ko'k",'#1e5bd8',560],['Xrom','#e8eef5',1180]];
+const TUNE=[['eng',1,'Dvigatel 1',640],['eng',2,'Dvigatel 2',1350],['eng',3,'Dvigatel 3',2780],['brk',1,'Tormoz',520],['neon',1,'Neon',870],['tint',1,'Tonirovka',390]];
+const T0=i=>(S.tune[i]=S.tune[i]||{eng:0,brk:0,neon:0,tint:0,rim:0,rimOwn:[0]});
+function applyTune(m,i){const T=S.tune[i]||{},r=RIMS[T.rim|0][1];
+if(r)(m.userData.wh||[]).forEach(w=>w&&w.traverse(o=>{if(o.isMesh&&o.material.metalness>=.5){o.material.color.set(r);o.material.metalness=.3}}));
+if(T.tint)m.traverse(o=>{if(o.isMesh&&o.material.transparent&&o.material.opacity<.9){o.material.color.set(0);o.material.opacity=.85}});
+if(T.neon){const g=new THREE.Mesh(new THREE.PlaneGeometry(2.6,5.2),new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));g.rotation.x=-Math.PI/2;g.position.y=.06;m.add(g)}}
+function pay(n){if(S.coins<n){toast('Coin yetarli emas');return 0}S.coins-=n;coins();return 1}
+function setCol(c){if(!S.own.includes(pv))return;S.col[pv]=c;save();setCar(pv);reset();gar()}
+function buyRim(k){const T=T0(pv);if(!T.rimOwn.includes(k)){if(!pay(RIMS[k][2]))return;T.rimOwn.push(k)}T.rim=k;save();setCar(pv);reset();gar()}
+function buyTune(j){const t=TUNE[j],T=T0(pv),h=T[t[0]]|0;if(h>=t[1])return toast("Allaqachon o'rnatilgan");if(t[0]=='eng'&&h<t[1]-1)return toast('Avval oldingi bosqichni oling');if(!pay(t[3]))return;T[t[0]]=t[1];save();setCar(pv);reset();gar();toast("O'rnatildi!")}
+function gtu(){const el=$('gt');if(!el)return;if(!S.own.includes(pv)){el.innerHTML='<small>Rang, disk va tuning uchun mashinani sotib oling</small>';return}const T=T0(pv);
+el.innerHTML='<div class="gr">Rang (bepul): '+COLS.map(c=>`<i class="sw ${(S.col[pv]||CARS[pv][3])==c?'on':''}" style="background:${c}" onclick="setCol('${c}')"></i>`).join('')+'</div><div class="gr">Disk: '+RIMS.map((r,k)=>`<button class="tb ${T.rim==k?'on':''}" onclick="buyRim(${k})">${r[0]}${T.rimOwn.includes(k)?'':' · '+r[2]}</button>`).join('')+'</div><div class="gr">Tuning: '+TUNE.map((t,j)=>{const h=(T[t[0]]|0)>=t[1];return `<button class="tb ${h?'on':''}" onclick="buyTune(${j})">${t[2]}${h?' ✔':' · '+t[3]}</button>`}).join('')+'</div>'}
+const FT={};function facTex(c,f){const k=c+'_'+f+'_'+(Math.random()*4|0);if(FT[k])return FT[k];const cv=document.createElement('canvas');cv.width=cv.height=64;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,64,64);x.fillStyle=Math.random()<.3?'#ffd966':'#2a3a4a';x.fillRect(14,12,36,36);x.fillStyle='#ffffff66';x.fillRect(14,12,36,5);const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(c,f);return FT[k]=t}
+function facade(w,h,d,col){const f=Math.max(1,Math.round(h/3.2)),cx=Math.max(1,Math.round(d/3.4)),cz=Math.max(1,Math.round(w/3.4)),L=t=>new THREE.MeshLambertMaterial({color:col,map:t}),mx=L(facTex(cx,f)),mz=L(facTex(cz,f)),rf=new THREE.MeshLambertMaterial({color:0x777777});return[mx,mx,rf,rf,mz,mz]}
+function gar(){gtu();$('gl').innerHTML=CARS.map((c,i)=>`<div class="cd ${i==pv?'on':''}" onclick="pick(${i})"><b>${c[0]}</b><small>${i>=NC?'$'+c[1]:c[1]?c[1]+' coin':'Bepul'}</small><em>${S.sel==i?'✔ Tanlangan':S.own.includes(i)?'Sizniki':''}</em></div>`).join('');
 const c=CARS[pv];$('ga').textContent=S.own.includes(pv)?(S.sel==pv?'Tanlangan':'Tanlash'):pv>=NC?'Sotib olish $'+c[1]:'Sotib olish '+c[1]+' coin'}
 function act(){const c=CARS[pv];if(S.own.includes(pv))S.sel=pv;
 else if(pv>=NC)return toast("To'lov tizimi hali ulanmagan: $"+c[1]);
@@ -165,12 +185,12 @@ let sig=0,RO=[];function sigT(d){sig=sig==d?0:d}
 function sigUpd(on){const sg=P.m&&P.m.userData.sg;if(sg)for(const k of['L','R']){const a=(k=='L'&&sig==-1)||(k=='R'&&sig==1);for(const l of sg[k]){l.material.color.set(a&&on?0xffaa00:0x553300);if(l.material.emissive)l.material.emissive.set(a&&on?0xff7700:0)}}
 $('sgL').style.color=sig==-1&&on?'#fa0':'#555';$('sgR').style.color=sig==1&&on?'#fa0':'#555'}
 function reward(n,t){P.bonus+=n;banner(t)}
-function play(dt){const mx=CARS[S.sel][4]/3.6,kS=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0);
+function play(dt){const tu=S.tune[S.sel]||{},mx=CARS[S.sel][4]/3.6*(1+[0,.06,.12,.2][tu.eng|0]),kS=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0);
 if(kS)wheel+=(kS*150-wheel)*Math.min(1,3*dt);else if(!drag)wheel*=Math.exp(-5*dt);
 $('wh').style.transform=`rotate(${wheel}deg)`;
 const MK=MISS[mi].k,b=brk||keys.arrowdown||keys.s;let g=gas||keys.arrowup||keys.w;
 if(MK=='fuel'){if(P.fuel<=0)g=0;P.fuel=Math.max(0,P.fuel-(g?.35+1.2*(P.v/mx)**2:.04)*dt)}
-let a=-P.v*.03;if(g)a+=P.v<0?10:(mx/8)*(1-(P.v/mx)**2);if(b)a-=P.v>.5?16:4;if(keys[' ']&&P.v>0)a-=18;
+let a=-P.v*.03;if(g)a+=P.v<0?10:(mx/8)*[1,1.1,1.2,1.35][tu.eng|0]*(1-(P.v/mx)**2);if(b)a-=P.v>.5?16*(tu.brk?1.35:1):4;if(keys[' ']&&P.v>0)a-=18;
 if(!g&&!b&&Math.abs(P.v)<.3)P.v=0;P.v=Math.max(-7,P.v+a*dt);
 const s=wheel/150,d=(s*Math.abs(s)*.6+s*.4)*.4/(1+Math.abs(P.v)*.12),ox=P.x,oz=P.z,oh=P.h,kh=P.v*3.6;
 P.h-=P.v/2.7*Math.tan(d)*dt;
@@ -185,7 +205,7 @@ if(Math.abs(off)>80){P.fail="Yo'ldan chiqding";return endRun(0)}
 const slip=Math.abs(P.h-P.vh);if(slip>.22&&kh>45){P.dt+=dt;if(P.dt>.7&&P.cd<=0){if(MK=='drift'){P.dr++;reward(20,'Zo\'r drift! +20')}else reward(10,'Drift! +10');P.cd=3;P.dt=0}}else P.dt=Math.max(0,P.dt-dt);P.cd-=dt;
 for(const tu of TURNS)if(!tu.done&&P.s>tu.s){tu.done=1;const dv=Math.min(Math.abs(off+3.25),Math.abs(off+9.75)),k=Math.abs(tu.dg)>=60?.6:1;
 if(dv<1.5&&kh>55*k)reward(20,'Perfect Turn! +20');else if(dv<2.5&&kh>40*k)reward(10,'Great Turn! +10');else if(dv<4.5&&kh>15)reward(5,'Good Turn! +5')}
-for(const t of tr){let lim=t.v;for(const u of tr)if(u!==t&&u.lane==t.lane){const gp=(u.s-t.s)*t.dir;if(gp>0&&gp<16)lim=Math.min(lim,(u.sv||u.v)*(gp<9?.6:1))}t.sv=lim;t.m.visible=true;t.s+=t.dir*lim*dt;const q=pathAt(t.s),x=q.x+Math.cos(q.h)*t.lane,z=q.z-Math.sin(q.h)*t.lane,ht=q.h+(t.dir>0?0:Math.PI);t.m.position.set(x,0,z);t.m.rotation.y=ht;
+for(const t of tr){let lim=t.v;for(const u of tr)if(u!==t&&u.lane==t.lane){const gp=(u.s-t.s)*t.dir;if(gp>0&&gp<16)lim=Math.min(lim,(u.sv||u.v)*(gp<9?.6:1))}{const dp=(P.s-t.s)*t.dir;if(dp>0&&dp<32&&Math.abs(off-t.lane)<3.6)lim=Math.min(lim,Math.max(0,(dp-9)*.9))}t.cs=t.cs===undefined?lim:t.cs+Math.max(-16*dt,Math.min(6*dt,lim-t.cs));lim=t.cs;t.sv=lim;t.m.visible=true;t.s+=t.dir*lim*dt;const q=pathAt(t.s),x=q.x+Math.cos(q.h)*t.lane,z=q.z-Math.sin(q.h)*t.lane,ht=q.h+(t.dir>0?0:Math.PI);t.m.position.set(x,0,z);t.m.rotation.y=ht;
 const ds=t.s-P.s;if(ds<-45||ds>380){resp(t,P.s+260+Math.random()*80);continue}
 const dx=P.x-x,dz=P.z-z;if(Math.abs(dx*Math.sin(ht)+dz*Math.cos(ht))<4.6&&Math.abs(dx*Math.cos(ht)-dz*Math.sin(ht))<2){P.v=0;P.crash=1;return endRun(0)}
 if(t.pd&&ds<=0){t.pd=0;const gp=Math.abs(off-t.lane);if(gp<4.5&&kh>40)reward(10,'Close Pass! +10')}}
